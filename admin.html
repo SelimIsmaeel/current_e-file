@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-File Management System — Admin Portal</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="all.css">
+</head>
+
+<body>
+
+  <div id="loginScreen">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="icon"> <img src="media/logo (1).png" alt="E-File logo"></div>
+        <div>
+          <h1>E-File</h1>
+          <span>Admin Portal</span>
+        </div>
+      </div>
+
+      <div id="loginError" class="login-error"></div>
+
+      <div id="loginForm">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="you@email.com">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter password">
+        </div>
+        <button class="btn-primary" onclick="handleLogin()">Log In</button>
+      </div>
+      <div class="login-hint">Not an administrator? <a href="index.html" style="color:var(--accent);font-weight:600;">Go
+          to the User Portal &rarr;</a></div>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+          <!-- <div class="icon">&#128193;</div> -->
+          <div class="icon">
+            <img src="media/logo (1).png" alt="E-File logo" class="logo">
+          </div>
+          <div>
+            <h2>E-Files</h2>
+            <span>Management System</span>
+          </div>
+        </div>
+        <div class="sidebar-section-label" id="panelLabel">ADMIN PANEL</div>
+        <nav id="navList"></nav>
+        <div class="sidebar-user">
+          <div class="avatar" id="sideAvatar">A</div>
+          <div class="who">
+            <b id="sideName">Admin</b>
+            <small id="sideRole">System Administrator</small>
+          </div>
+          <button class="logout-btn" title="Log out" onclick="handleLogout()"><i
+              class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <button class="icon-btn" style="display:none;" id="hamburger"
+              onclick="document.getElementById('sidebar').classList.toggle('open')">&#9776;</button>
+            <div>
+              <h1 id="pageTitle">Dashboard</h1>
+              <div class="breadcrumb" id="pageBreadcrumb">Dashboard</div>
+            </div>
+          </div>
+          <div class="topbar-right">
+            <div class="search-box">
+              <span class="ic"><i class="fa-solid fa-search"></i></span>
+              <input type="text" id="globalSearch" placeholder="Search files, users...">
+            </div>
+            <div class="bell" onclick="navigate(currentUser.role==='admin'?'notifications-admin':'notifications')">
+              <i class="fa-solid fa-bell"></i>
+              <span class="dot" id="bellCount" style="display:none;">0</span>
+            </div>
+            <div class="avatar" id="topAvatar">A</div>
+          </div>
+        </div>
+        <div class="content" id="content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <div class="modal-bg" id="modalBg">
+    <div class="modal" id="modalBody"></div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+
+</html>

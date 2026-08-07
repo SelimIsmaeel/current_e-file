@@ -1,0 +1,10 @@
+admin login
+
+email: admin@efile.com
+password: admin123
+
+email: sarah.adebola@email.com
+password: user123
+
+email: john.olakunle@email.com
+password: user123
