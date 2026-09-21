@@ -398,6 +398,11 @@ const adminNav = [
     icon: '<i class="fa-solid fa-file-lines"></i>',
   },
   {
+    id: "tracking",
+    label: "Tracking",
+    icon: '<i class="fa-solid fa-clock-rotate-left"></i>',
+  },
+  {
     id: "reports",
     label: "Reports",
     icon: '<i class="fa-solid fa-chart-pie"></i>',
@@ -510,6 +515,9 @@ function render() {
       break;
     case "submissions-admin":
       c.innerHTML = renderSubmissionsAdmin();
+      break;
+    case "tracking":
+      c.innerHTML = renderTracking();
       break;
     case "reports":
       c.innerHTML = renderReports();
@@ -713,7 +721,7 @@ function renderAdminDashboard() {
   </div>
   <div class="grid-2">
     <div class="panel">
-      <div class="panel-head"><h3>Recent Activity</h3><span class="link-btn" style="cursor:pointer;" onclick="navigate('submissions-admin')">View all</span></div>
+      <div class="panel-head"><h3>Recent Activity</h3><span class="link-btn" style="cursor:pointer;" onclick="navigate('tracking')">View all</span></div>
       ${
         activity.length === 0
           ? emptyState("&#128203;", "No recent activity yet.")
@@ -1052,6 +1060,12 @@ function downloadFile(fileName, id, source) {
   document.body.appendChild(a);
   a.click();
   a.remove();
+
+  logActivity(
+    currentUser ? currentUser.name : "Unknown",
+    "Downloaded File",
+    fileName,
+  );
 }
 
 function renderSubmissionsAdmin() {
@@ -1129,6 +1143,69 @@ function reviewSubmission(subId, nextStatus) {
   logActivity("Admin", `${nextStatus} Submission`, s.fileName);
   toast(`Submission record updated to ${nextStatus}.`);
   render();
+}
+
+function renderTracking() {
+  const activity = loadDB(DB_ACTIVITY);
+  const today = new Date().toDateString();
+  const actionsToday = activity.filter(
+    (a) => new Date(a.time).toDateString() === today,
+  ).length;
+  const downloads = activity.filter((a) =>
+    a.action.toLowerCase().includes("download"),
+  ).length;
+
+  const counts = {};
+  activity.forEach((a) => {
+    counts[a.user] = (counts[a.user] || 0) + 1;
+  });
+  const topUser = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+
+  const actionTypes = [...new Set(activity.map((a) => a.action))].sort();
+
+  return `
+  <div class="stat-grid">
+    ${statCard(`<i class="fa-solid fa-list-check"></i>`, "Logged Actions", activity.length, "#dbeafe", "#2563eb", "All time")}
+    ${statCard(`<i class="fa-solid fa-calendar-day"></i>`, "Actions Today", actionsToday, "#d1fae5", "#059669", "Since midnight")}
+    ${statCard(`<i class="fa-solid fa-download"></i>`, "File Downloads", downloads, "#fef3c7", "#b45309", "Tracked downloads")}
+    ${statCard(`<i class="fa-solid fa-user-clock"></i>`, "Most Active", topUser ? counts[topUser] : 0, "#ede9fe", "#6d28d9", topUser ? topUser : "No activity yet")}
+  </div>
+  <div class="panel">
+    <div class="panel-head">
+      <h3>User Activity &amp; File Audit Log</h3>
+      <select id="trackFilter" onchange="filterTracking(this.value)" style="max-width:220px;">
+        <option value="">All Actions</option>
+        ${actionTypes.map((a) => `<option value="${a}">${a}</option>`).join("")}
+      </select>
+    </div>
+    ${
+      activity.length === 0
+        ? emptyState(
+            `<i class="fa-solid fa-clock-rotate-left"></i>`,
+            "No user actions have been logged yet.",
+          )
+        : `
+    <table id="trackingTable"><thead><tr><th>User</th><th>Action</th><th>File / Target</th><th>Timestamp</th></tr></thead>
+    <tbody>
+      ${activity
+        .map(
+          (a) => `<tr data-action="${a.action}">
+        <td><b>${a.user}</b></td>
+        <td>${a.action}</td>
+        <td>${a.fileName || "-"}</td>
+        <td>${fmtDateTime(a.time)}</td>
+      </tr>`,
+        )
+        .join("")}
+    </tbody></table>`
+    }
+  </div>`;
+}
+
+function filterTracking(action) {
+  document.querySelectorAll("#trackingTable tbody tr").forEach((row) => {
+    row.style.display = !action || row.dataset.action === action ? "" : "none";
+  });
 }
 
 function renderReports() {
@@ -1406,7 +1483,7 @@ function renderProfile() {
   const u = currentUser;
   pendingProfilePhoto = undefined;
   return `
-  <div class="panel" style="max-width:560px;">
+  <div class="panel" style="max-width:560px; margin: auto">
     <div class="panel-head"><h3>Account Settings Profile</h3></div>
     <div style="text-align:center;">
       <div class="avatar-lg" id="profileAvatarPreview">${avatarInner(u)}</div>
