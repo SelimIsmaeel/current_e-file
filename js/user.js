@@ -263,10 +263,49 @@ function seedData() {
   saveDB(DB_ACTIVITY, activity);
 }
 
-function logActivity(user, action, fileName, status = "") {
+function logActivity(user, action, fileName, fileId = null, userId = null) {
   const activity = loadDB(DB_ACTIVITY);
-  activity.unshift({ id: uid("a"), user, action, fileName, time: nowISO() });
-  saveDB(DB_ACTIVITY, activity.slice(0, 50));
+  activity.unshift({
+    id: uid("a"),
+    user,
+    userId,
+    action,
+    fileName,
+    fileId,
+    time: nowISO(),
+  });
+  saveDB(DB_ACTIVITY, activity.slice(0, 200));
+}
+
+// Returns the tracked action trail (viewed / downloaded / edited / etc.) for
+// a single file, matched by fileId where available, falling back to fileName
+// for legacy entries logged before tracking carried a fileId.
+function fileHistory(fileId, fileName) {
+  return loadDB(DB_ACTIVITY)
+    .filter(
+      (a) =>
+        (fileId && a.fileId === fileId) ||
+        (!a.fileId && fileName && a.fileName === fileName),
+    )
+    .slice()
+    .sort((a, b) => new Date(b.time) - new Date(a.time));
+}
+
+function actionBadgeClass(action) {
+  if (action === "Viewed") return "review";
+  if (action === "Downloaded") return "completed";
+  if (action && action.startsWith("Edited")) return "progress";
+  if (action && action.includes("Rejected")) return "rejected";
+  if (
+    action &&
+    (action.includes("Approved") || action === "Submitted Document")
+  )
+    return "completed";
+  return "pending";
+}
+
+function actionBadge(action) {
+  return `<span class="badge ${actionBadgeClass(action)}">${action}</span>`;
 }
 
 let currentUser = null;
@@ -398,14 +437,14 @@ const adminNav = [
     icon: '<i class="fa-solid fa-file-lines"></i>',
   },
   {
-    id: "tracking",
-    label: "Tracking",
-    icon: '<i class="fa-solid fa-clock-rotate-left"></i>',
-  },
-  {
     id: "reports",
     label: "Reports",
     icon: '<i class="fa-solid fa-chart-pie"></i>',
+  },
+  {
+    id: "audit-log",
+    label: "Audit Log",
+    icon: '<i class="fa-solid fa-clipboard-list"></i>',
   },
   {
     id: "notifications-admin",
@@ -516,11 +555,11 @@ function render() {
     case "submissions-admin":
       c.innerHTML = renderSubmissionsAdmin();
       break;
-    case "tracking":
-      c.innerHTML = renderTracking();
-      break;
     case "reports":
       c.innerHTML = renderReports();
+      break;
+    case "audit-log":
+      c.innerHTML = renderAuditLog();
       break;
     case "notifications-admin":
       c.innerHTML = renderNotifications(true);
@@ -721,7 +760,7 @@ function renderAdminDashboard() {
   </div>
   <div class="grid-2">
     <div class="panel">
-      <div class="panel-head"><h3>Recent Activity</h3><span class="link-btn" style="cursor:pointer;" onclick="navigate('tracking')">View all</span></div>
+      <div class="panel-head"><h3>Recent Activity</h3><span class="link-btn" style="cursor:pointer;" onclick="navigate('audit-log')">View all</span></div>
       ${
         activity.length === 0
           ? emptyState("&#128203;", "No recent activity yet.")
@@ -1024,6 +1063,7 @@ function renderFilesFolders() {
         <td>${fmtDate(f.dueDate)}</td>
         <td>${badge(f.status)}</td>
         <td>
+          <button class="icon-btn purple" title="View Details &amp; Activity" onclick="viewFileDetails('${f.id}','files')"><i class="fa-solid fa-eye"></i></button>
           ${f.data ? `<button class="icon-btn blue" title="Download Source" onclick="downloadFile('${f.fileName}','${f.id}','files')">&#8681;</button>` : ""}
           <button class="icon-btn red" title="Delete Log Entry" onclick="deleteFile('${f.id}')">&#128465;</button>
         </td>
@@ -1046,9 +1086,14 @@ function deleteFile(id) {
 }
 
 function downloadFile(fileName, id, source) {
-  let rec;
-  if (source === "files") rec = loadDB(DB_FILES).find((f) => f.id === id);
-  else rec = loadDB(DB_SUBS).find((s) => s.id === id);
+  let rec, fileId;
+  if (source === "files") {
+    rec = loadDB(DB_FILES).find((f) => f.id === id);
+    fileId = id;
+  } else {
+    rec = loadDB(DB_SUBS).find((s) => s.id === id);
+    fileId = rec ? rec.fileId : null;
+  }
 
   if (!rec || !rec.data) {
     toast("File contents are missing or unavailable.", "error");
@@ -1063,9 +1108,155 @@ function downloadFile(fileName, id, source) {
 
   logActivity(
     currentUser ? currentUser.name : "Unknown",
-    "Downloaded File",
+    "Downloaded",
     fileName,
+    fileId,
+    currentUser ? currentUser.id : null,
   );
+}
+
+// Opens a details modal for a file (source "files") or a submission
+// (source "subs"), logs a "Viewed" entry against it, and shows its
+// tracked activity trail (viewed / downloaded / edited / reviewed, by whom, when).
+function viewFileDetails(id, source) {
+  let rec, fileId, displayName;
+  if (source === "files") {
+    rec = loadDB(DB_FILES).find((f) => f.id === id);
+    fileId = id;
+    displayName = rec ? rec.title : "";
+  } else {
+    rec = loadDB(DB_SUBS).find((s) => s.id === id);
+    fileId = rec ? rec.fileId : null;
+    displayName = rec ? rec.fileName : "";
+  }
+  if (!rec) {
+    toast("Record not found.", "error");
+    return;
+  }
+
+  logActivity(
+    currentUser ? currentUser.name : "Unknown",
+    "Viewed",
+    rec.fileName,
+    fileId,
+    currentUser ? currentUser.id : null,
+  );
+
+  const trail = fileHistory(fileId, rec.fileName).slice(0, 12);
+  const isAdmin = currentUser && currentUser.role === "admin";
+
+  const detailsHtml =
+    source === "files"
+      ? `
+      <div class="field"><label>Title</label><div style="font-size:13.5px;">${rec.title}</div></div>
+      <div class="field"><label>Description</label><div style="font-size:13.5px;color:var(--muted);">${rec.description || "-"}</div></div>
+      <div class="field"><label>Category</label><div style="font-size:13.5px;">${rec.category}</div></div>
+      <div class="field"><label>Assigned To</label><div style="font-size:13.5px;">${userName(rec.assignedTo)}</div></div>
+      <div class="field"><label>Status</label><div>${badge(rec.status)}</div></div>
+      <div class="field"><label>Uploaded / Due</label><div style="font-size:13.5px;">${fmtDateTime(rec.uploadedOn)} &rarr; ${fmtDate(rec.dueDate)}</div></div>
+    `
+      : `
+      <div class="field"><label>File Name</label><div style="font-size:13.5px;">${rec.fileName}</div></div>
+      <div class="field"><label>Submitted By</label><div style="font-size:13.5px;">${userName(rec.submittedBy)}</div></div>
+      <div class="field"><label>Submitted On</label><div style="font-size:13.5px;">${fmtDateTime(rec.submittedOn)}</div></div>
+      <div class="field"><label>Status</label><div>${badge(rec.status)}</div></div>
+      <div class="field"><label>Reviewed By</label><div style="font-size:13.5px;">${rec.reviewedBy || "-"}</div></div>
+      <div class="field"><label>Remarks</label><div style="font-size:13.5px;color:var(--muted);">${rec.remarks || "-"}</div></div>
+    `;
+
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3>${displayName || rec.fileName}</h3>
+    ${detailsHtml}
+    <div class="panel-head" style="padding:0 0 8px;margin-top:6px;"><h3 style="font-size:14px;">Activity Trail</h3></div>
+    ${
+      trail.length === 0
+        ? `<p style="color:var(--muted);font-size:13px;">No tracked actions yet.</p>`
+        : `<table><thead><tr><th>User</th><th>Action</th><th>Time</th></tr></thead><tbody>
+      ${trail
+        .map(
+          (a) =>
+            `<tr><td>${a.user}</td><td>${actionBadge(a.action)}</td><td>${fmtDateTime(a.time)}</td></tr>`,
+        )
+        .join("")}
+    </tbody></table>`
+    }
+    ${
+      isAdmin && source === "files"
+        ? `<button class="btn ghost" style="width:100%;margin-top:14px;" onclick="closeModal();editFile('${id}')">&#9998; Edit File Details</button>`
+        : ""
+    }
+  `);
+}
+
+function editFile(id) {
+  const files = loadDB(DB_FILES);
+  const f = files.find((x) => x.id === id);
+  if (!f) return;
+  openModal(`
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3>Edit File Details</h3>
+    <div class="field"><label>Title</label><input id="efTitle" value="${f.title}"></div>
+    <div class="field"><label>Description</label><textarea id="efDesc" rows="3">${f.description || ""}</textarea></div>
+    <div class="field"><label>Category</label>
+      <select id="efCategory">
+        ${["Documents", "Spreadsheets", "Presentations"]
+          .map(
+            (c) =>
+              `<option value="${c}" ${f.category === c ? "selected" : ""}>${c}</option>`,
+          )
+          .join("")}
+      </select>
+    </div>
+    <div class="field"><label>Due Date</label><input type="date" id="efDue" value="${f.dueDate ? f.dueDate.slice(0, 10) : ""}"></div>
+    <button class="btn primary" style="width:100%;margin-top:6px;" onclick="saveFileEdit('${id}')">Save Changes</button>
+  `);
+}
+
+function saveFileEdit(id) {
+  const files = loadDB(DB_FILES);
+  const f = files.find((x) => x.id === id);
+  if (!f) return;
+
+  const changed = [];
+  const newTitle = document.getElementById("efTitle").value.trim();
+  const newDesc = document.getElementById("efDesc").value.trim();
+  const newCategory = document.getElementById("efCategory").value;
+  const newDue = document.getElementById("efDue").value;
+
+  if (newTitle && newTitle !== f.title) {
+    f.title = newTitle;
+    changed.push("title");
+  }
+  if (newDesc !== (f.description || "")) {
+    f.description = newDesc;
+    changed.push("description");
+  }
+  if (newCategory !== f.category) {
+    f.category = newCategory;
+    changed.push("category");
+  }
+  if (newDue) {
+    const newDueISO = new Date(newDue).toISOString();
+    if (!f.dueDate || newDueISO.slice(0, 10) !== f.dueDate.slice(0, 10)) {
+      f.dueDate = newDueISO;
+      changed.push("due date");
+    }
+  }
+
+  saveDB(DB_FILES, files);
+
+  logActivity(
+    currentUser ? currentUser.name : "Admin",
+    changed.length ? `Edited (${changed.join(", ")})` : "Edited",
+    f.fileName,
+    f.id,
+    currentUser ? currentUser.id : null,
+  );
+
+  closeModal();
+  toast("File details updated.");
+  render();
 }
 
 function renderSubmissionsAdmin() {
@@ -1089,6 +1280,7 @@ function renderSubmissionsAdmin() {
         <td>${s.reviewedBy || "-"}</td>
         <td><small style="color:var(--muted);">${s.remarks || "-"}</small></td>
         <td>
+          <button class="icon-btn purple" title="View Details &amp; Activity" onclick="viewFileDetails('${s.id}','subs')"><i class="fa-solid fa-eye"></i></button>
           ${s.data ? `<button class="icon-btn blue" title="Download Version" onclick="downloadFile('${s.fileName}','${s.id}','subs')">&#8681;</button>` : ""}
           ${
             s.status === "Under Review"
@@ -1145,69 +1337,6 @@ function reviewSubmission(subId, nextStatus) {
   render();
 }
 
-function renderTracking() {
-  const activity = loadDB(DB_ACTIVITY);
-  const today = new Date().toDateString();
-  const actionsToday = activity.filter(
-    (a) => new Date(a.time).toDateString() === today,
-  ).length;
-  const downloads = activity.filter((a) =>
-    a.action.toLowerCase().includes("download"),
-  ).length;
-
-  const counts = {};
-  activity.forEach((a) => {
-    counts[a.user] = (counts[a.user] || 0) + 1;
-  });
-  const topUser = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-
-  const actionTypes = [...new Set(activity.map((a) => a.action))].sort();
-
-  return `
-  <div class="stat-grid">
-    ${statCard(`<i class="fa-solid fa-list-check"></i>`, "Logged Actions", activity.length, "#dbeafe", "#2563eb", "All time")}
-    ${statCard(`<i class="fa-solid fa-calendar-day"></i>`, "Actions Today", actionsToday, "#d1fae5", "#059669", "Since midnight")}
-    ${statCard(`<i class="fa-solid fa-download"></i>`, "File Downloads", downloads, "#fef3c7", "#b45309", "Tracked downloads")}
-    ${statCard(`<i class="fa-solid fa-user-clock"></i>`, "Most Active", topUser ? counts[topUser] : 0, "#ede9fe", "#6d28d9", topUser ? topUser : "No activity yet")}
-  </div>
-  <div class="panel">
-    <div class="panel-head">
-      <h3>User Activity &amp; File Audit Log</h3>
-      <select id="trackFilter" onchange="filterTracking(this.value)" style="max-width:220px;">
-        <option value="">All Actions</option>
-        ${actionTypes.map((a) => `<option value="${a}">${a}</option>`).join("")}
-      </select>
-    </div>
-    ${
-      activity.length === 0
-        ? emptyState(
-            `<i class="fa-solid fa-clock-rotate-left"></i>`,
-            "No user actions have been logged yet.",
-          )
-        : `
-    <table id="trackingTable"><thead><tr><th>User</th><th>Action</th><th>File / Target</th><th>Timestamp</th></tr></thead>
-    <tbody>
-      ${activity
-        .map(
-          (a) => `<tr data-action="${a.action}">
-        <td><b>${a.user}</b></td>
-        <td>${a.action}</td>
-        <td>${a.fileName || "-"}</td>
-        <td>${fmtDateTime(a.time)}</td>
-      </tr>`,
-        )
-        .join("")}
-    </tbody></table>`
-    }
-  </div>`;
-}
-
-function filterTracking(action) {
-  document.querySelectorAll("#trackingTable tbody tr").forEach((row) => {
-    row.style.display = !action || row.dataset.action === action ? "" : "none";
-  });
-}
-
 function renderReports() {
   const files = loadDB(DB_FILES);
   const completed = files.filter((f) => f.status === "Completed").length;
@@ -1233,6 +1362,48 @@ function renderReports() {
   </div>`;
 }
 
+function renderAuditLog() {
+  const activity = loadDB(DB_ACTIVITY);
+  const actionTypes = [...new Set(activity.map((a) => a.action))];
+
+  return `
+  <div class="panel">
+    <div class="panel-head">
+      <h3>File Activity Audit Log</h3>
+      <select id="auditActionFilter" onchange="filterAuditLog()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;">
+        <option value="">All Actions</option>
+        ${actionTypes.map((a) => `<option value="${a}">${a}</option>`).join("")}
+      </select>
+    </div>
+    <p style="color:var(--muted);font-size:12.5px;margin:-6px 0 14px;">Tracks who viewed, downloaded or edited each file, and when. Use the search bar above to filter by user or file name.</p>
+    ${
+      activity.length === 0
+        ? emptyState("&#128203;", "No activity recorded yet.")
+        : `
+    <table id="auditTable"><thead><tr><th>User</th><th>Action</th><th>File</th><th>Date &amp; Time</th></tr></thead>
+    <tbody>
+      ${activity
+        .map(
+          (a) => `<tr data-action="${a.action}">
+        <td><b>${a.user}</b></td>
+        <td>${actionBadge(a.action)}</td>
+        <td><div class="file-cell">${fileIcon(a.fileName || "file")}<span>${a.fileName || "-"}</span></div></td>
+        <td>${fmtDateTime(a.time)}</td>
+      </tr>`,
+        )
+        .join("")}
+    </tbody></table>`
+    }
+  </div>`;
+}
+
+function filterAuditLog() {
+  const val = document.getElementById("auditActionFilter").value;
+  document.querySelectorAll("#auditTable tbody tr").forEach((r) => {
+    r.style.display = !val || r.dataset.action === val ? "" : "none";
+  });
+}
+
 function renderNotifications(isAdmin) {
   const allNotifs = loadDB(DB_NOTIFS);
   const usersNotifs = allNotifs.filter((n) => n.userId === currentUser.id);
@@ -1247,7 +1418,7 @@ function renderNotifications(isAdmin) {
   }, 200);
 
   return `
-  <div class="panel" style="max-width:680px;">
+  <div class="panel" style="max-width:680px; margin:auto;">
     <div class="panel-head"><h3>System Workspace Notifications</h3></div>
     ${
       usersNotifs.length === 0
@@ -1336,6 +1507,7 @@ function renderMyFiles() {
       <td>${fmtDate(f.dueDate)}</td>
       <td>${badge(f.status)}</td>
       <td>
+        <button class="icon-btn purple" title="View Details &amp; Activity" onclick="viewFileDetails('${f.id}','files')"><i class="fa-solid fa-eye"></i></button>
         ${f.data ? `<button class="icon-btn blue" title="Download Source" onclick="downloadFile('${f.fileName}','${f.id}','files')">&#8681;</button>` : `<button class="icon-btn" disabled style="opacity:.4;">&#8681;</button>`}
         <button class="icon-btn green" title="Upload Return Version" onclick="goUploadFor('${f.id}')">&#9729;</button>
       </td>
@@ -1362,7 +1534,7 @@ function renderUploadCompleted() {
     (f) => f.assignedTo === currentUser.id && f.status !== "Completed",
   );
   return `
-  <div class="panel" style="max-width:580px;">
+  <div class="panel" style="max-width:580px; margin: auto;">
     <div class="panel-head"><h3>Upload Fulfilling Deliverables</h3></div>
     <div class="field"><label>Select Reference Base File Task</label>
       <select id="ucFileId">${files.map((f) => `<option value="${f.id}" ${preselectFileId === f.id ? "selected" : ""}>${f.title} (${f.fileName})</option>`).join("")}</select>
@@ -1468,6 +1640,7 @@ function renderMySubmissions() {
       <td>${s.reviewedBy}</td>
       <td><small style="color:var(--muted);">${s.remarks}</small></td>
       <td>
+        <button class="icon-btn purple" title="View Details &amp; Activity" onclick="viewFileDetails('${s.id}','subs')"><i class="fa-solid fa-eye"></i></button>
         ${s.data ? `<button class="icon-btn blue" title="Download Dispatched Copy" onclick="downloadFile('${s.fileName}','${s.id}','subs')">&#8681;</button>` : ""}
       </td>
     </tr>`,
@@ -1483,7 +1656,7 @@ function renderProfile() {
   const u = currentUser;
   pendingProfilePhoto = undefined;
   return `
-  <div class="panel" style="max-width:560px; margin: auto">
+  <div class="panel" style="max-width:560px; margin: auto;">
     <div class="panel-head"><h3>Account Settings Profile</h3></div>
     <div style="text-align:center;">
       <div class="avatar-lg" id="profileAvatarPreview">${avatarInner(u)}</div>

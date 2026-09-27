@@ -1,5 +1,5 @@
- :root {
-  --navy: #173A83;
+:root {
+  --navy: #173a83;
   --navy-light: #16264f;
   --accent: #2f6fed;
   --accent-dark: #1e56d6;
@@ -53,7 +53,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #173A83, #2f6fed);
+  background: linear-gradient(135deg, #173a83, #2f6fed);
 }
 .login-box {
   background: #fff;
@@ -80,7 +80,7 @@ button {
   color: #fff;
   font-size: 20px;
 }
-.login-logo .icon img{
+.login-logo .icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -230,7 +230,7 @@ button {
   color: #fff;
   font-weight: 700;
 }
-.sidebar-logo .icon  img{
+.sidebar-logo .icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -571,6 +571,10 @@ tr:last-child td {
   color: #dc2626;
   border-color: #f6c9c9;
 }
+.icon-btn.purple {
+  color: #6d28d9;
+  border-color: #ddd0fb;
+}
 
 .btn {
   padding: 9px 16px;
@@ -622,9 +626,8 @@ tr:last-child td {
   grid-template-columns: 1fr 1fr; */
   display: flex;
   flex-direction: column-reverse;
-  
-  gap: 16px;
 
+  gap: 16px;
 }
 
 .dropzone {
@@ -869,163 +872,157 @@ tr:last-child td {
   }
 }
 
-@media (max-width:992px){
+@media (max-width: 992px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-    .stat-grid{
-        grid-template-columns:repeat(2,1fr);
-    }
+  .grid-2,
+  .profile-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .grid-2,
-    .profile-grid,
-    .form-grid{
-        grid-template-columns:1fr;
-    }
+  .content {
+    padding: 20px;
+  }
 
-    .content{
-        padding:20px;
-    }
+  .topbar {
+    padding: 15px 20px;
+  }
 
-    .topbar{
-        padding:15px 20px;
-    }
-
-    .search-box input{
-        width:180px;
-    }
-
+  .search-box input {
+    width: 180px;
+  }
 }
 
-@media (max-width:768px){
+@media (max-width: 768px) {
+  .shell {
+    display: block;
+  }
 
-    .shell{
-        display:block;
-    }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    width: 250px;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s;
+  }
 
-    .sidebar{
-        position:fixed;
-        top:0;
-        left:-260px;
-        width:250px;
-        height:100vh;
-        z-index:1000;
-        transition:left .3s;
-    }
+  .sidebar.open {
+    left: 0;
+  }
 
-    .sidebar.open{
-        left:0;
-    }
+  .main {
+    width: 100%;
+  }
 
-    .main{
-        width:100%;
-    }
+  #hamburger {
+    display: flex !important;
+  }
 
-    #hamburger{
-        display:flex !important;
-    }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 15px;
+  }
 
-    .topbar{
-        flex-wrap:wrap;
-        gap:15px;
-        padding:15px;
-    }
+  .topbar-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-    .topbar-right{
-        width:100%;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-    }
+  .search-box {
+    flex: 1;
+  }
 
-    .search-box{
-        flex:1;
-    }
+  .search-box input {
+    width: 100%;
+  }
 
-    .search-box input{
-        width:100%;
-    }
+  .content {
+    padding: 15px;
+  }
 
-    .content{
-        padding:15px;
-    }
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .stat-grid{
-        grid-template-columns:1fr;
-    }
+  .grid-2,
+  .profile-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .grid-2,
-    .profile-grid,
-    .form-grid{
-        grid-template-columns:1fr;
-    }
+  .panel {
+    overflow-x: auto;
+  }
 
-    .panel{
-        overflow-x:auto;
-    }
+  table {
+    min-width: 700px;
+  }
 
-    table{
-        min-width:700px;
-    }
+  .btn,
+  .btn-primary {
+    width: 100%;
+  }
 
-    .btn,
-    .btn-primary{
-        width:100%;
-    }
-
-    .modal{
-        width:95%;
-        max-height:90vh;
-        overflow:auto;
-    }
-
+  .modal {
+    width: 95%;
+    max-height: 90vh;
+    overflow: auto;
+  }
 }
 
-@media (max-width:480px){
+@media (max-width: 480px) {
+  body {
+    font-size: 13px;
+  }
 
-    body{
-        font-size:13px;
-    }
+  .login-box {
+    width: 95%;
+    padding: 20px;
+  }
 
-    .login-box{
-        width:95%;
-        padding:20px;
-    }
+  .login-logo {
+    flex-direction: column;
+    text-align: center;
+  }
 
-    .login-logo{
-        flex-direction:column;
-        text-align:center;
-    }
+  .topbar h1 {
+    font-size: 18px;
+  }
 
-    .topbar h1{
-        font-size:18px;
-    }
+  .breadcrumb {
+    font-size: 11px;
+  }
 
-    .breadcrumb{
-        font-size:11px;
-    }
+  .avatar {
+    width: 30px;
+    height: 30px;
+  }
 
-    .avatar{
-        width:30px;
-        height:30px;
-    }
+  .avatar-lg {
+    width: 90px;
+    height: 90px;
+    font-size: 30px;
+  }
 
-    .avatar-lg{
-        width:90px;
-        height:90px;
-        font-size:30px;
-    }
+  .stat-card {
+    padding: 15px;
+  }
 
-    .stat-card{
-        padding:15px;
-    }
+  .panel {
+    padding: 15px;
+  }
 
-    .panel{
-        padding:15px;
-    }
-
-    .field input,
-    .field select,
-    textarea{
-        font-size:16px;
-    }
-
+  .field input,
+  .field select,
+  textarea {
+    font-size: 16px;
+  }
 }

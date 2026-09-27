@@ -1,5 +1,5 @@
 :root {
-  --navy: #173A83;
+  --navy: #173a83;
   --navy-light: #16264f;
   --accent: #2f6fed;
   --accent-dark: #1e56d6;
@@ -53,7 +53,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #173A83, #2f6fed);
+  background: linear-gradient(135deg, #173a83, #2f6fed);
 }
 .login-box {
   background: #fff;
@@ -80,11 +80,10 @@ button {
   color: #fff;
   font-size: 20px;
 }
-.login-logo .icon  img{
+.login-logo .icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  
 }
 .login-logo h1 {
   font-size: 18px;
@@ -217,7 +216,7 @@ button {
   color: #fff;
   font-weight: 700;
 }
-.sidebar-logo .icon  img{
+.sidebar-logo .icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -558,6 +557,10 @@ tr:last-child td {
   color: #dc2626;
   border-color: #f6c9c9;
 }
+.icon-btn.purple {
+  color: #6d28d9;
+  border-color: #ddd0fb;
+}
 
 .btn {
   padding: 9px 16px;
@@ -857,135 +860,129 @@ tr:last-child td {
    TABLETS
 ================================ */
 @media (max-width: 992px) {
+  .content {
+    padding: 20px;
+  }
 
-    .content{
-        padding:20px;
-    }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
-    .stat-grid{
-        grid-template-columns:repeat(2,1fr);
-    }
+  .grid-2,
+  .profile-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .grid-2,
-    .profile-grid,
-    .form-grid{
-        grid-template-columns:1fr;
-    }
-
-    .search-box input{
-        width:170px;
-    }
-
+  .search-box input {
+    width: 170px;
+  }
 }
 
 /* ===============================
    MOBILE
 ================================ */
-@media (max-width:768px){
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 0;
+    height: 100vh;
+    z-index: 999;
+    transition: 0.3s;
+  }
 
-    .sidebar{
-        position:fixed;
-        left:-260px;
-        top:0;
-        height:100vh;
-        z-index:999;
-        transition:.3s;
-    }
+  .sidebar.open {
+    left: 0;
+  }
 
-    .sidebar.open{
-        left:0;
-    }
+  #hamburger {
+    display: flex !important;
+  }
 
-    #hamburger{
-        display:flex !important;
-    }
+  .topbar {
+    padding: 15px;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
 
-    .topbar{
-        padding:15px;
-        flex-wrap:wrap;
-        gap:15px;
-    }
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
 
-    .topbar-right{
-        width:100%;
-        justify-content:space-between;
-    }
+  .search-box {
+    flex: 1;
+  }
 
-    .search-box{
-        flex:1;
-    }
+  .search-box input {
+    width: 100%;
+  }
 
-    .search-box input{
-        width:100%;
-    }
+  .content {
+    padding: 15px;
+  }
 
-    .content{
-        padding:15px;
-    }
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
 
-    .stat-grid{
-        grid-template-columns:1fr;
-    }
+  .panel {
+    overflow-x: auto;
+  }
 
-    .panel{
-        overflow-x:auto;
-    }
+  table {
+    min-width: 700px;
+  }
 
-    table{
-        min-width:700px;
-    }
-
-    .btn,
-    .btn-primary{
-        width:100%;
-    }
-
+  .btn,
+  .btn-primary {
+    width: 100%;
+  }
 }
 
 /* ===============================
    SMALL PHONES
 ================================ */
-@media (max-width:480px){
+@media (max-width: 480px) {
+  .login-box {
+    width: 95%;
+    padding: 20px;
+  }
 
-    .login-box{
-        width:95%;
-        padding:20px;
-    }
+  .topbar h1 {
+    font-size: 18px;
+  }
 
-    .topbar h1{
-        font-size:18px;
-    }
+  .breadcrumb {
+    font-size: 11px;
+  }
 
-    .breadcrumb{
-        font-size:11px;
-    }
+  .stat-card {
+    padding: 15px;
+  }
 
-    .stat-card{
-        padding:15px;
-    }
+  .stat-card .value {
+    font-size: 22px;
+  }
 
-    .stat-card .value{
-        font-size:22px;
-    }
+  .panel {
+    padding: 15px;
+  }
 
-    .panel{
-        padding:15px;
-    }
+  .modal {
+    width: 95%;
+    padding: 15px;
+  }
 
-    .modal{
-        width:95%;
-        padding:15px;
-    }
+  .avatar-lg {
+    width: 90px;
+    height: 90px;
+    font-size: 30px;
+  }
 
-    .avatar-lg{
-        width:90px;
-        height:90px;
-        font-size:30px;
-    }
-
-    .tabs{
-        overflow-x:auto;
-        white-space:nowrap;
-    }
-
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
 }
